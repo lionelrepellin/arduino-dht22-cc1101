@@ -8,6 +8,8 @@
 
 DHT dht(DHTPIN, DHTTYPE);
 
+const int led_red = 8;
+
 const int n = 61;
 byte buffer[n] = "";
 
@@ -15,6 +17,9 @@ void setup() {
   Serial.begin(9600);
   dht.begin();
   ELECHOUSE_cc1101.Init(F_433); // set frequency - F_433, F_868, F_965 MHz
+  
+  pinMode(led_red, OUTPUT);
+  digitalWrite(led_red, HIGH);
 }
 
 union cvt {
@@ -23,7 +28,7 @@ union cvt {
 } u;
 
 void loop() {
-  delay(2000);
+  delay(10000);
 
   float t = dht.readTemperature(); // celsius
   float f = dht.readTemperature(true); // farenheit
@@ -47,11 +52,25 @@ void loop() {
   encodeTemperature(buffer, t);
   encodeHumidity(buffer, h);
   encodeFeelTemp(buffer, feel);
-   
+  createChecksum(buffer);
+  
   int len = sizeof(buffer);
   buffer[len] = '\0';
     
   ELECHOUSE_cc1101.SendData(buffer, len);
+  lightTheLed();
+}
+
+void lightTheLed() {
+  digitalWrite(led_red, LOW);
+  delay(1000);
+  digitalWrite(led_red, HIGH);
+}
+
+void createChecksum(byte buffer[]) {
+  buffer[12] = buffer[0];
+  buffer[13] = buffer[4];
+  buffer[14] = buffer[8];
 }
 
 void encodeTemperature(byte buffer[], float temp) {
